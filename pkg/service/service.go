@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/am3o/overwatch/pkg/domain"
+	"go.uber.org/zap"
 )
 
 type Messanger interface {
@@ -14,20 +15,23 @@ type Messanger interface {
 type Service struct {
 	collector ProductCollector
 	messanger Messanger
-	products map[uint32]domain.Product
+	logger    *zap.Logger
+	products  map[uint32]domain.Product
 }
 
-func New(collector ProductCollector, messanger Messanger) Service {
+func New(collector ProductCollector, messanger Messanger, logger *zap.Logger) Service {
 	return Service{
 		collector: collector,
 		messanger: messanger,
-		products: make(map[uint32]domain.Product),
+		logger:    logger,
+		products:  make(map[uint32]domain.Product),
 	}
 }
 
 func (s Service) Notify(products domain.Products) {
+	s.logger.With(zap.Int("Products", len(products))).Info("Notified about new received products")
 	for _, product := range products {
-		//s.collector.TrackProduct(product.Name, product.Price)
+		// s.collector.TrackProduct(product.Name, product.Price)
 
 		if strings.Contains(product.Name, "Aqua") {
 			continue

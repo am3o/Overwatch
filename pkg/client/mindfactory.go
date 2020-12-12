@@ -8,15 +8,18 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/am3o/overwatch/pkg/domain"
+	"go.uber.org/zap"
 )
 
 type MindfactoryClient struct {
-	uri *url.URL
+	uri    *url.URL
+	logger *zap.Logger
 }
 
-func NewMindfactoryClient (uri *url.URL) MindfactoryClient {
+func NewMindfactoryClient(uri *url.URL, logger *zap.Logger) MindfactoryClient {
 	return MindfactoryClient{
-		uri: uri,
+		uri:    uri,
+		logger: logger,
 	}
 }
 
@@ -51,7 +54,7 @@ func (client MindfactoryClient) Search(query string) (domain.Products, error) {
 
 		product, err := domain.NewProduct(title, uri, price, available)
 		if err != nil {
-			fmt.Println(err)
+			client.logger.Error("could not create new product", zap.Error(err))
 			return
 		}
 
@@ -60,4 +63,3 @@ func (client MindfactoryClient) Search(query string) (domain.Products, error) {
 
 	return products, nil
 }
-
