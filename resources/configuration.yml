@@ -1,0 +1,6 @@
+messanger:
+  token: "<TELEGRAM_TOKEN>"
+  ids:
+    - 0
+
+search: "mouse"
