@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/url"
+	"os"
 	"time"
 
 	"github.com/am3o/overwatch/pkg/client"
@@ -19,7 +20,12 @@ func main() {
 		panic(err)
 	}
 
-	config, err := config.Read("./resources/configuration.yml")
+	path, exists := os.LookupEnv("CONFIGURATION")
+	if !exists {
+		path = "./resources/configuration.yml"
+	}
+	
+	config, err := config.Read(path)
 	if err != nil {
 		panic(err)
 	}
