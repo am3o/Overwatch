@@ -2,9 +2,12 @@ package service
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/am3o/overwatch/pkg/domain"
+	"github.com/patrickmn/go-cache"
 	"go.uber.org/zap"
 )
 
@@ -16,7 +19,7 @@ type Service struct {
 	collector ProductCollector
 	messanger Messanger
 	logger    *zap.Logger
-	products  map[uint32]domain.Product
+	products  *cache.Cache
 }
 
 func New(collector ProductCollector, messanger Messanger, logger *zap.Logger) Service {
@@ -24,7 +27,7 @@ func New(collector ProductCollector, messanger Messanger, logger *zap.Logger) Se
 		collector: collector,
 		messanger: messanger,
 		logger:    logger,
-		products:  make(map[uint32]domain.Product),
+		products:  cache.New(10*time.Minute, 15*time.Minute),
 	}
 }
 
@@ -33,21 +36,31 @@ func (s Service) Notify(products domain.Products) {
 	for _, product := range products {
 		// s.collector.TrackProduct(product.Name, product.Price)
 
-		if strings.Contains(product.Name, "Aqua") {
+		if !strings.Contains(strings.ToLower(product.Name), "geforce") {
 			continue
 		}
 
-		p, ok := s.products[product.Hash()]
+		key := strconv.FormatUint(product.Hash(), 32)
+		p, ok := s.products.Get(key)
 		if !ok {
-			s.products[product.Hash()] = product
+			s.products.Set(key, product, cache.DefaultExpiration)
 			s.messanger.Message(fmt.Sprintf("Neue Karte steht zur Verfügung: %v € \n %v",
 				product.Price, product.URI))
 			continue
 		}
 
-		if p.Price > product.Price {
+		if obj, ok := p.(domain.Product); ok && obj.Price > product.Price {
 			s.messanger.Message(fmt.Sprintf("Ist im Preis gesunken von %v € auf %v €: \n %v",
-				p.Price, product.Price, product.URI))
+				obj.Price, product.Price, product.URI))
 		}
 	}
+}
+
+func (s Service) Check() []string {
+	var products = make([]string, 0)
+	for _, item := range s.products.Items() {
+		product := item.Object.(domain.Product)
+		products = append(products, fmt.Sprintf("%v: %v € \n %v", product.Name, product.Price, product.URI))
+	}
+	return products
 }

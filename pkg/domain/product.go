@@ -36,11 +36,11 @@ func NewProduct(name string, uri string, price string, available string) (Produc
 	}, nil
 }
 
-func(p Product) Hash() uint32 {
+func (p Product) Hash() uint64 {
 	h := fnv.New32a()
 	_, err := h.Write([]byte(p.Name))
 	if err != nil {
 		return 0
 	}
-	return h.Sum32()
+	return uint64(h.Sum32())
 }

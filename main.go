@@ -24,7 +24,7 @@ func main() {
 	if !exists {
 		path = "./resources/configuration.yml"
 	}
-	
+
 	config, err := config.Read(path)
 	if err != nil {
 		panic(err)
@@ -34,7 +34,7 @@ func main() {
 	shop := client.NewMindfactoryClient(uri, logger)
 
 	collector := service.NewCollector()
-	messanger, err := client.NewTelegram(config.Messanger.Token, config.Messanger.Ids)
+	messanger, err := client.NewTelegram(config.Messanger.Token, config.Messanger.Ids, logger)
 	if err != nil {
 		panic(err)
 	}
@@ -42,7 +42,8 @@ func main() {
 	srv := service.New(collector, messanger, logger)
 
 	scraper := service.NewScraper(shop, srv, logger)
-	go scraper.Run(context.Background(), 5*time.Minute, config.Search)
+	go scraper.Run(context.Background(), time.Minute, config.Search)
+	go messanger.Update(srv.Check)
 
 	http.Handle("/api/metrics", promhttp.Handler())
 	if err := http.ListenAndServe(":8080", nil); err != nil {
